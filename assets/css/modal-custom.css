@@ -1,0 +1,135 @@
+
+/* Fix Bootstrap Modal Layer & Backdrop Alignment */
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+
+.modal-app {
+    z-index: 1050 !important;
+}
+
+.modal-app.fade .modal-dialog {
+    transform: translateY(-20px);
+    transition: transform 0.3s ease-out;
+}
+
+.modal-app.show .modal-dialog {
+    transform: none;
+}
+
+.modal-app .modal-content {
+    border: none;
+    border-radius: 22px;
+    background: #ffffff;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+}
+
+.modal-app .modal-header {
+    border-bottom: 1px solid #f0f1f3;
+    padding: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-app .modal-heading {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.modal-app .modal-icon {
+    width: 48px;
+    height: 48px;
+    background: #fff0ea;
+    color: #ff6b2c;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.modal-app .modal-icon .icon {
+    width: 24px;
+    height: 24px;
+}
+
+.modal-app .modal-heading h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #171a20;
+    margin: 0;
+}
+
+.modal-app .modal-heading p {
+    font-size: 13px;
+    color: #6c757d;
+    margin: 4px 0 0;
+}
+
+.modal-app .modal-body {
+    padding: 24px;
+}
+
+.modal-app .modal-footer {
+    border-top: 1px solid #f0f1f3;
+    padding: 20px 24px;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.modal-app .modal-backdrop.show {
+    opacity: 0.4;
+    background-color: #1a1c22;
+}
+
+/* Form Styles Inside Modal */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.form-field--full {
+    grid-column: span 2;
+}
+
+.form-field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #343a40;
+    margin-bottom: 8px;
+}
+
+.form-field input, 
+.form-field select, 
+.form-field textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+.form-field input:focus {
+    outline: none;
+    border-color: #ff6b2c;
+}
+
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+.modal {
+    z-index: 1050 !important;
+}
+.modal.fade {
+    pointer-events: none;
+    transition: opacity 0.15s linear;
+}
+.modal.fade.show {
+    pointer-events: auto;
+}

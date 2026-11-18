@@ -1,0 +1,284 @@
+/* ==========================================================================
+   BukuHub — base layer
+   Tokens, font face, reset, icon defaults, shared animations
+   ========================================================================== */
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("../vendor/fonts/plus-jakarta-sans-latin.woff2") format("woff2");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* Brand */
+  --orange: #ff6b2c;
+  --orange-bright: #ff7c3c;
+  --orange-deep: #e25517;
+  --orange-ink: #c4510f;
+  --orange-soft: #fff1e8;
+  --orange-tint: #ffe3d3;
+
+  /* Neutrals */
+  --ink: #171a20;
+  --text: #2b3039;
+  --text-soft: #59616e;
+  --muted: #8b93a1;
+  --muted-light: #9aa2ae;
+  --line: #eceef2;
+  --line-soft: #f2f3f6;
+  --bg: #f4f5f7;
+  --card: #ffffff;
+  --charcoal: #1a1c22;
+  --charcoal-deep: #14161a;
+  --charcoal-soft: #23262d;
+
+  /* Semantics */
+  --green: #12b76a;
+  --green-ink: #0b7a4b;
+  --green-soft: #e9f8f0;
+  --red: #d92d20;
+  --red-soft: #ffebe9;
+  --amber: #d97706;
+
+  /* Shape & depth */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-2xl: 24px;
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.03), 0 18px 34px -24px rgba(16, 24, 40, 0.16);
+  --shadow-card-hover: 0 2px 4px rgba(16, 24, 40, 0.04), 0 26px 44px -24px rgba(16, 24, 40, 0.22);
+  --shadow-pop: 0 24px 48px -18px rgba(16, 24, 40, 0.28);
+
+  /* Type */
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --sidebar-w: 268px;
+  --topbar-h: 78px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(1100px 480px at 100% -12%, rgba(255, 107, 44, 0.07), transparent 62%),
+    radial-gradient(700px 500px at 8% 110%, rgba(255, 107, 44, 0.035), transparent 60%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, p, figure {
+  margin: 0;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+}
+
+img,
+svg {
+  display: block;
+}
+
+::selection {
+  background: rgba(255, 107, 44, 0.22);
+  color: #5a2408;
+}
+
+:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
+/* Inline icon system */
+.svg-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Accessible skip link */
+.skip-link {
+  position: fixed;
+  top: -60px;
+  left: 16px;
+  z-index: 2000;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--charcoal);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 16px;
+}
+
+/* Shared helpers */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 3px rgba(18, 183, 106, 0.12);
+  vertical-align: 1px;
+}
+
+/* Scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #dcdfe5 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #dcdfe5;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #c8ccd4;
+  background-clip: padding-box;
+}
+
+/* Motion */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@keyframes donut-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92) rotate(-8deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

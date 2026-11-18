@@ -1,0 +1,426 @@
+/* ==========================================================================
+   BukuHub — responsive layer
+   ========================================================================== */
+
+@media (max-width: 1420px) {
+  .topbar {
+    padding-right: 26px;
+    padding-left: 26px;
+  }
+
+  .content {
+    padding-right: 26px;
+    padding-left: 26px;
+  }
+
+  .search {
+    width: 268px;
+  }
+
+  .search:focus-within {
+    width: 312px;
+  }
+
+  .split-grid,
+  .bottom-grid {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1240px) {
+  .chart-head {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .chart-tools {
+    margin-left: auto;
+  }
+
+  .category-count,
+  .cat-count {
+    display: none;
+  }
+
+  .book-title,
+  .book-author {
+    max-width: 148px;
+  }
+}
+
+@media (max-width: 1120px) {
+  .sidebar {
+    width: 286px;
+    transform: translateX(-104%);
+    box-shadow: 30px 0 60px -30px rgba(0, 0, 0, 0.45);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-close {
+    display: grid;
+  }
+
+  .sidebar-backdrop.is-open {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .main {
+    margin-left: 0;
+  }
+
+  .menu-btn {
+    display: grid;
+  }
+
+  .split-grid,
+  .bottom-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ebook-card {
+    min-height: 400px;
+  }
+
+  .categories-card {
+    min-height: 470px;
+  }
+
+  .ebook-number span:first-child {
+    font-size: 48px;
+  }
+
+  .donut-wrap {
+    width: 210px;
+    height: 210px;
+  }
+
+  .cat-name,
+  .cat-pct {
+    font-size: 11.5px;
+  }
+}
+
+@media (max-width: 900px) {
+  .kpi-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .kpi-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 20px;
+  }
+
+  .kpi-top {
+    grid-column: 1 / -1;
+  }
+
+  .kpi-label {
+    margin-top: 12px;
+  }
+
+  .kpi-foot {
+    grid-column: 1 / -1;
+  }
+
+  .kpi-note {
+    margin-left: 0;
+  }
+
+  .spark {
+    flex: none;
+    width: 140px;
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .topbar-actions {
+    width: 100%;
+  }
+
+  .search {
+    flex: 1;
+    width: auto;
+  }
+
+  .search:focus-within {
+    width: auto;
+  }
+
+  .table-card {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .topbar {
+    padding: 14px 18px;
+  }
+
+  .content {
+    gap: 16px;
+    padding: 18px 16px 24px;
+  }
+
+  .kpi-grid,
+  .split-grid,
+  .bottom-grid {
+    gap: 16px;
+  }
+
+  .page-title {
+    font-size: 21px;
+  }
+
+  .eyebrow {
+    font-size: 8.5px;
+    letter-spacing: 0.1em;
+  }
+
+  .chart-card,
+  .categories-card,
+  .ebook-card {
+    padding: 20px 18px;
+  }
+
+  .card-head h2 {
+    font-size: 14.5px;
+  }
+
+  .chart-tools {
+    width: 100%;
+    justify-content: space-between;
+    gap: 10px;
+    margin-left: 0;
+  }
+
+  .chart-y,
+  .chart-plot {
+    height: 210px;
+  }
+
+  .chart-bars {
+    gap: 3px;
+    padding: 0 2px;
+  }
+
+  .chart-x {
+    gap: 3px;
+    padding-right: 2px;
+    padding-left: 2px;
+  }
+
+  .bar {
+    width: 8px;
+  }
+
+  .bar-pair {
+    gap: 2px;
+  }
+
+  .chart-foot {
+    flex-wrap: wrap;
+  }
+
+  .chart-foot-meta {
+    margin-left: 0;
+  }
+
+  .table-head {
+    padding: 18px 18px 0;
+  }
+
+  .table-toolbar {
+    padding: 12px 18px 10px;
+  }
+
+  .loans-table thead th:first-child,
+  .loans-table tbody td:first-child {
+    padding-left: 18px;
+  }
+
+  .loans-table thead th:last-child,
+  .loans-table tbody td:last-child {
+    padding-right: 18px;
+  }
+
+  .modal-heading h2 {
+    font-size: 15px;
+  }
+
+  #addBookModal .modal-header,
+  #addBookModal .modal-body,
+  #addBookModal .modal-footer {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .form-field--full {
+    grid-column: auto;
+  }
+
+  .toast-stack {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
+@media (max-width: 560px) {
+  .topbar-left {
+    gap: 10px;
+  }
+
+  .menu-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .search {
+    height: 42px;
+    padding-left: 38px;
+  }
+
+  .search-kbd {
+    display: none;
+  }
+
+  .btn-add {
+    width: 44px;
+    height: 42px;
+    padding: 0;
+  }
+
+  .btn-add span {
+    display: none;
+  }
+
+  .bell-btn {
+    width: 42px;
+    height: 42px;
+  }
+
+  .legend {
+    display: none;
+  }
+
+  .segmented {
+    margin-left: auto;
+  }
+
+  .chart-card {
+    padding-bottom: 16px;
+  }
+
+  .chart-foot {
+    font-size: 9.5px;
+  }
+
+  .ebook-card {
+    min-height: 0;
+  }
+
+  .ebook-number span:first-child {
+    font-size: 40px;
+  }
+
+  .ebook-copy {
+    max-width: none;
+  }
+
+  .ebook-readers-text {
+    display: none;
+  }
+
+  .ebook-cta {
+    height: 38px;
+    padding: 0 14px;
+  }
+
+  .categories-card {
+    min-height: 0;
+  }
+
+  .donut-wrap {
+    width: 172px;
+    height: 172px;
+    margin-top: 16px;
+  }
+
+  .table-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .filter-tabs {
+    gap: 3px;
+  }
+
+  .filter-btn {
+    padding: 5px 8px;
+    font-size: 9.5px;
+  }
+
+  .result-count {
+    padding-left: 2px;
+  }
+
+  .table-head .link-btn {
+    padding-right: 0;
+  }
+
+  .notif-menu {
+    position: fixed !important;
+    top: 66px !important;
+    right: 12px !important;
+    left: 12px !important;
+    width: auto;
+    margin: 0 !important;
+    transform: none !important;
+  }
+
+  .app-toast {
+    padding: 11px 12px;
+  }
+
+  .page-foot {
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 400px) {
+  .filter-btn .tab-count {
+    display: none;
+  }
+
+  .chart-x span:nth-child(even) {
+    visibility: hidden;
+  }
+
+  .kpi-value {
+    font-size: 28px;
+  }
+
+  .kpi-icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .modal-dialog {
+    margin: 0.4rem;
+  }
+}
