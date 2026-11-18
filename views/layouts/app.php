@@ -27,8 +27,8 @@ if ($modalToOpen === '' && (!empty($prefillBook) || !empty($prefillMember))) {
   <meta name="theme-color" content="#1a1c22">
   <title><?= e($documentTitle) ?></title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23ff6b2c'/%3E%3Cpath d='M16 46V18h12l4 8 4-8h12v28H38V32l-6 11-6-11v14z' fill='white'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/vendor/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/layout.css">
   <link rel="stylesheet" href="assets/css/components.css">
   <link rel="stylesheet" href="assets/css/widgets.css">
