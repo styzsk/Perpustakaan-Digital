@@ -11,24 +11,13 @@ final class AuthController extends BaseController
 {
     protected string $pageKey = 'login';
 
-    protected function actions(): array
-    {
-        return [
-            'index' => 'showLogin',
-            'login' => 'login',
-            'logout' => 'logout',
-        ];
-    }
-
-    public function showLogin(): void
+    public function index(): void
     {
         if (Auth::check()) {
             redirect(url('dashboard'));
         }
 
-        $this->render('auth/login', [
-            'pageTitle' => 'Masuk',
-        ], 'auth');
+        $this->render('auth/login', ['pageTitle' => 'Masuk'], 'auth');
     }
 
     public function login(): void
@@ -40,12 +29,14 @@ final class AuthController extends BaseController
             redirect(url('login'));
         }
 
-        // Pembatasan percobaan login: maksimal 5 kali per 5 menit.
-        $now = time();
-        $attempts = $_SESSION['login_attempts'] ?? [];
-        $attempts = array_values(array_filter($attempts, static fn ($time) => ($now - (int) $time) < 300));
+        // Maksimal 5 percobaan dalam 5 menit.
+        $resetAt = (int) ($_SESSION['login_reset_at'] ?? 0);
+        if ($resetAt < time()) {
+            $_SESSION['login_attempts'] = 0;
+            $_SESSION['login_reset_at'] = time() + 300;
+        }
 
-        if (count($attempts) >= 5) {
+        if ((int) ($_SESSION['login_attempts'] ?? 0) >= 5) {
             flash('error', 'Terlalu banyak percobaan login. Coba lagi dalam beberapa menit.');
             redirect(url('login'));
         }
@@ -66,16 +57,14 @@ final class AuthController extends BaseController
         }
 
         if (!Auth::attempt($username, $password)) {
-            $attempts[] = $now;
-            $_SESSION['login_attempts'] = $attempts;
-
+            $_SESSION['login_attempts'] = (int) ($_SESSION['login_attempts'] ?? 0) + 1;
             remember_old_input(['username' => $username]);
             flash('error', 'Username atau password salah.');
             redirect(url('login'));
         }
 
-        unset($_SESSION['login_attempts']);
-        audit_trail('login', 'users', (int) ($_SESSION['user_id'] ?? 0), 'Login berhasil sebagai ' . ($_SESSION['user_username'] ?? $username));
+        unset($_SESSION['login_attempts'], $_SESSION['login_reset_at']);
+        audit_trail('login', 'users', (int) $_SESSION['user_id'], 'Login berhasil');
         flash('success', 'Selamat datang kembali, ' . ($_SESSION['user_nama'] ?? 'Pustakawan') . '.');
         redirect(url('dashboard'));
     }
@@ -89,13 +78,9 @@ final class AuthController extends BaseController
             redirect(url('dashboard'));
         }
 
-        $userId = (int) ($_SESSION['user_id'] ?? 0);
-        audit_trail('logout', 'users', $userId > 0 ? $userId : null, 'Pengguna keluar dari aplikasi', $userId > 0 ? $userId : null);
-
+        audit_trail('logout', 'users', (int) ($_SESSION['user_id'] ?? 0), 'Pengguna keluar');
         Auth::logout();
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            session_start();
-        }
+        session_start();
         flash('success', 'Anda telah keluar dari BukuHub.');
         redirect(url('login'));
     }

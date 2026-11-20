@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Core\Database;
-
 /**
- * Akses data tabel `pengaturan` (satu baris konfigurasi aplikasi).
+ * Query tabel `pengaturan` (satu baris konfigurasi).
  */
 final class SettingsModel
 {
@@ -19,49 +17,50 @@ final class SettingsModel
             return self::$cache;
         }
 
-        $stmt = Database::pdo()->query('SELECT * FROM pengaturan WHERE id_pengaturan = 1');
-        $row = $stmt->fetch();
+        $row = db_one('SELECT * FROM pengaturan WHERE id_pengaturan = 1');
 
+        // Buat baris default bila tabel masih kosong.
         if (!$row) {
             $defaults = config('defaults', []);
-            $insert = Database::pdo()->prepare(
-                "INSERT INTO pengaturan (id_pengaturan, nama_aplikasi, nama_instansi, tarif_denda,
+            db_run(
+                'INSERT INTO pengaturan (id_pengaturan, nama_aplikasi, nama_instansi, tarif_denda,
                                          durasi_hari, maks_pinjam_default, email_kontak, alamat)
-                 VALUES (1, 'BukuHub', 'Perpustakaan Digital BukuHub', :tarif, :durasi, :maks, '', '')"
+                 VALUES (1, :nama, :instansi, :tarif, :durasi, :maks, :email, :alamat)',
+                [
+                    'nama' => 'BukuHub',
+                    'instansi' => 'Perpustakaan Digital BukuHub',
+                    'tarif' => (int) ($defaults['tarif_denda'] ?? 1000),
+                    'durasi' => (int) ($defaults['durasi_hari'] ?? 7),
+                    'maks' => (int) ($defaults['maks_pinjam_default'] ?? 3),
+                    'email' => '',
+                    'alamat' => '',
+                ]
             );
-            $insert->execute([
-                'tarif' => (int) ($defaults['tarif_denda'] ?? 1000),
-                'durasi' => (int) ($defaults['durasi_hari'] ?? 7),
-                'maks' => (int) ($defaults['maks_pinjam_default'] ?? 3),
-            ]);
 
-            $stmt = Database::pdo()->query('SELECT * FROM pengaturan WHERE id_pengaturan = 1');
-            $row = $stmt->fetch();
+            $row = db_one('SELECT * FROM pengaturan WHERE id_pengaturan = 1');
         }
 
-        self::$cache = $row ?: [];
-        return self::$cache;
+        return self::$cache = ($row ?: []);
     }
 
     public static function update(array $data): void
     {
-        $stmt = Database::pdo()->prepare(
+        db_run(
             'UPDATE pengaturan SET nama_aplikasi = :nama_aplikasi, nama_instansi = :nama_instansi,
                     tarif_denda = :tarif_denda, durasi_hari = :durasi_hari,
                     maks_pinjam_default = :maks_pinjam_default, email_kontak = :email_kontak,
                     alamat = :alamat
-             WHERE id_pengaturan = 1'
+             WHERE id_pengaturan = 1',
+            [
+                'nama_aplikasi' => $data['nama_aplikasi'],
+                'nama_instansi' => $data['nama_instansi'],
+                'tarif_denda' => (int) $data['tarif_denda'],
+                'durasi_hari' => (int) $data['durasi_hari'],
+                'maks_pinjam_default' => (int) $data['maks_pinjam_default'],
+                'email_kontak' => $data['email_kontak'],
+                'alamat' => $data['alamat'],
+            ]
         );
-
-        $stmt->execute([
-            'nama_aplikasi' => $data['nama_aplikasi'],
-            'nama_instansi' => $data['nama_instansi'],
-            'tarif_denda' => (int) $data['tarif_denda'],
-            'durasi_hari' => (int) $data['durasi_hari'],
-            'maks_pinjam_default' => (int) $data['maks_pinjam_default'],
-            'email_kontak' => $data['email_kontak'],
-            'alamat' => $data['alamat'],
-        ]);
 
         self::$cache = null;
     }

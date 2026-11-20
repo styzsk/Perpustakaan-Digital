@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Core\Database;
 use App\Core\Validator;
 use App\Models\BookModel;
 use App\Models\FineModel;
@@ -16,11 +15,6 @@ use App\Models\UserModel;
 final class SettingsController extends BaseController
 {
     protected string $pageKey = 'settings';
-
-    protected function actions(): array
-    {
-        return ['index' => 'index', 'update' => 'update'];
-    }
 
     public function index(): void
     {
@@ -76,13 +70,10 @@ final class SettingsController extends BaseController
 
     private function systemInfo(): array
     {
-        $pdo = Database::pdo();
-        $database = (string) $pdo->query('SELECT DATABASE()')->fetchColumn();
-
         return [
             'php' => PHP_VERSION,
-            'mysql' => (string) $pdo->query('SELECT VERSION()')->fetchColumn(),
-            'database' => $database,
+            'mysql' => (string) db_value('SELECT VERSION()'),
+            'database' => (string) db_value('SELECT DATABASE()'),
             'timezone' => date_default_timezone_get(),
             'users' => UserModel::count(),
         ];

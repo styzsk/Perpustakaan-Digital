@@ -6,20 +6,10 @@ namespace App\Controllers;
 
 use App\Core\AppException;
 use App\Models\FineModel;
-use App\Services\FineService;
 
 final class FineController extends BaseController
 {
     protected string $pageKey = 'fines';
-
-    protected function actions(): array
-    {
-        return [
-            'index' => 'index',
-            'pay' => 'pay',
-            'export' => 'export',
-        ];
-    }
 
     public function index(): void
     {
@@ -53,7 +43,7 @@ final class FineController extends BaseController
         }
 
         try {
-            $result = FineService::pay($id);
+            $result = FineModel::pay($id);
             audit_trail(
                 'pay',
                 'denda',

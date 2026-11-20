@@ -14,17 +14,6 @@ final class BookController extends BaseController
 {
     protected string $pageKey = 'books';
 
-    protected function actions(): array
-    {
-        return [
-            'index' => 'index',
-            'show' => 'show',
-            'save' => 'save',
-            'delete' => 'delete',
-            'export' => 'export',
-        ];
-    }
-
     public function index(): void
     {
         $filters = [

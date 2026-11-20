@@ -52,15 +52,6 @@ final class Validator
         return $this;
     }
 
-    public function minLength(string $field, string $label, int $min): self
-    {
-        $value = $this->value($field);
-        if (is_string($value) && mb_strlen(trim($value)) < $min) {
-            $this->errors[$field] = $label . ' minimal ' . $min . ' karakter.';
-        }
-        return $this;
-    }
-
     public function email(string $field, string $label): self
     {
         $value = trim((string) $this->value($field));

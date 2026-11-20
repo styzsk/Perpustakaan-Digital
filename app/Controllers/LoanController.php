@@ -10,21 +10,11 @@ use App\Models\BookModel;
 use App\Models\LoanModel;
 use App\Models\MemberModel;
 use App\Models\SettingsModel;
-use App\Services\LoanService;
 
 final class LoanController extends BaseController
 {
     protected string $pageKey = 'borrowing';
-
-    protected function actions(): array
-    {
-        return [
-            'index' => 'index',
-            'store' => 'store',
-            'return' => 'returnBook',
-            'export' => 'export',
-        ];
-    }
+    protected array $actionAliases = ['return' => 'returnBook'];
 
     public function index(): void
     {
@@ -90,7 +80,7 @@ final class LoanController extends BaseController
         }
 
         try {
-            $loanId = LoanService::create($memberId, $bookId, $data['tgl_pinjam']);
+            $loanId = LoanModel::createLoan($memberId, $bookId, $data['tgl_pinjam']);
             $loan = LoanModel::find($loanId);
             audit_trail(
                 'create',
@@ -124,7 +114,7 @@ final class LoanController extends BaseController
         }
 
         try {
-            $result = LoanService::returnBook($id);
+            $result = LoanModel::returnLoan($id);
             audit_trail(
                 'return',
                 'peminjaman',

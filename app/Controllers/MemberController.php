@@ -13,17 +13,6 @@ final class MemberController extends BaseController
 {
     protected string $pageKey = 'members';
 
-    protected function actions(): array
-    {
-        return [
-            'index' => 'index',
-            'show' => 'show',
-            'save' => 'save',
-            'delete' => 'delete',
-            'export' => 'export',
-        ];
-    }
-
     public function index(): void
     {
         $filters = [

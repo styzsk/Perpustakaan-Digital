@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Core\Database;
-use PDO;
+use App\Core\AppException;
 
 /**
- * Akses data tabel `buku`.
+ * Query tabel `buku`.
  */
 final class BookModel
 {
-    private const SORTABLE = [
+    private const SORT = [
         'judul' => 'b.judul',
         'pengarang' => 'b.pengarang',
         'kategori' => 'b.kategori',
@@ -29,10 +28,7 @@ final class BookModel
         if ($keyword !== '') {
             $where[] = '(b.judul LIKE :q1 OR b.pengarang LIKE :q2 OR b.kategori LIKE :q3 OR b.isbn LIKE :q4)';
             $like = '%' . $keyword . '%';
-            $params['q1'] = $like;
-            $params['q2'] = $like;
-            $params['q3'] = $like;
-            $params['q4'] = $like;
+            $params = ['q1' => $like, 'q2' => $like, 'q3' => $like, 'q4' => $like];
         }
 
         $category = trim((string) ($filters['kategori'] ?? ''));
@@ -50,115 +46,33 @@ final class BookModel
             $where[] = 'b.jumlah_eksemplar > b.stok_tersedia';
         }
 
-        $whereSql = $where === [] ? '' : ' WHERE ' . implode(' AND ', $where);
+        $whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
+        $sort = self::SORT[(string) ($filters['sort'] ?? 'judul')] ?? 'b.judul';
+        $dir = strtolower((string) ($filters['dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
 
-        $sortKey = (string) ($filters['sort'] ?? 'judul');
-        $sortColumn = self::SORTABLE[$sortKey] ?? self::SORTABLE['judul'];
-        $direction = strtolower((string) ($filters['dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
-        $orderSql = ' ORDER BY ' . $sortColumn . ' ' . $direction;
+        $select = 'SELECT b.*, (b.jumlah_eksemplar - b.stok_tersedia) AS dipinjam FROM buku b';
+        $countSql = 'SELECT COUNT(*) FROM buku b' . $whereSql;
+        $dataSql = $select . $whereSql . ' ORDER BY ' . $sort . ' ' . $dir;
 
-        $pdo = Database::pdo();
-
-        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM buku b' . $whereSql);
-        $countStmt->execute($params);
-        $total = (int) $countStmt->fetchColumn();
-
-        $totalPages = max(1, (int) ceil($total / $perPage));
-        $page = min(max(1, $page), $totalPages);
-        $offset = ($page - 1) * $perPage;
-
-        $sql = 'SELECT b.*, (b.jumlah_eksemplar - b.stok_tersedia) AS dipinjam FROM buku b'
-            . $whereSql . $orderSql . ' LIMIT :limit OFFSET :offset';
-        $stmt = $pdo->prepare($sql);
-        foreach ($params as $key => $value) {
-            $stmt->bindValue(':' . $key, $value, PDO::PARAM_STR);
-        }
-        $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
-
-        return [
-            'items' => $stmt->fetchAll(),
-            'total' => $total,
-            'page' => $page,
-            'perPage' => $perPage,
-            'totalPages' => $totalPages,
-            'from' => $total === 0 ? 0 : $offset + 1,
-            'to' => min($offset + $perPage, $total),
-        ];
+        return db_paginate($countSql, $dataSql, $params, $page, $perPage);
     }
 
     public static function find(int $id): ?array
     {
-        $stmt = Database::pdo()->prepare(
-            'SELECT b.*, (b.jumlah_eksemplar - b.stok_tersedia) AS dipinjam FROM buku b WHERE b.id_buku = :id'
+        return db_one(
+            'SELECT b.*, (b.jumlah_eksemplar - b.stok_tersedia) AS dipinjam
+             FROM buku b WHERE b.id_buku = :id',
+            ['id' => $id]
         );
-        $stmt->execute(['id' => $id]);
-        $book = $stmt->fetch();
-
-        return $book ?: null;
     }
 
     public static function create(array $data): int
     {
-        $stmt = Database::pdo()->prepare(
+        db_run(
             'INSERT INTO buku (judul, pengarang, kategori, isbn, penerbit, tahun_terbit, sinopsis,
                                jumlah_eksemplar, stok_tersedia)
-             VALUES (:judul, :pengarang, :kategori, :isbn, :penerbit, :tahun, :sinopsis, :total, :tersedia)'
-        );
-
-        $stmt->execute([
-            'judul' => $data['judul'],
-            'pengarang' => $data['pengarang'],
-            'kategori' => $data['kategori'],
-            'isbn' => $data['isbn'] !== '' ? $data['isbn'] : null,
-            'penerbit' => $data['penerbit'] !== '' ? $data['penerbit'] : null,
-            'tahun' => $data['tahun_terbit'] !== '' ? (int) $data['tahun_terbit'] : null,
-            'sinopsis' => $data['sinopsis'] !== '' ? $data['sinopsis'] : null,
-            'total' => (int) $data['jumlah_eksemplar'],
-            'tersedia' => (int) $data['jumlah_eksemplar'],
-        ]);
-
-        return (int) Database::pdo()->lastInsertId();
-    }
-
-    /**
-     * Update metadata buku. Stok tersedia disesuaikan bila total eksemplar berubah,
-     * tanpa mengubah jumlah eksemplar yang sedang dipinjam.
-     */
-    public static function update(int $id, array $data): void
-    {
-        $pdo = Database::pdo();
-
-        $stmt = $pdo->prepare(
-            'SELECT jumlah_eksemplar, stok_tersedia FROM buku WHERE id_buku = :id FOR UPDATE'
-        );
-
-        $pdo->beginTransaction();
-        try {
-            $stmt->execute(['id' => $id]);
-            $current = $stmt->fetch();
-            if (!$current) {
-                throw new \RuntimeException('Buku tidak ditemukan.');
-            }
-
-            $onLoan = (int) $current['jumlah_eksemplar'] - (int) $current['stok_tersedia'];
-            $newTotal = (int) $data['jumlah_eksemplar'];
-
-            if ($newTotal < $onLoan) {
-                throw new \App\Core\AppException(
-                    'Jumlah eksemplar tidak boleh kurang dari ' . $onLoan . ' eksemplar yang sedang dipinjam.'
-                );
-            }
-
-            $update = $pdo->prepare(
-                'UPDATE buku SET judul = :judul, pengarang = :pengarang, kategori = :kategori,
-                        isbn = :isbn, penerbit = :penerbit, tahun_terbit = :tahun, sinopsis = :sinopsis,
-                        jumlah_eksemplar = :total, stok_tersedia = :tersedia
-                 WHERE id_buku = :id'
-            );
-
-            $update->execute([
+             VALUES (:judul, :pengarang, :kategori, :isbn, :penerbit, :tahun, :sinopsis, :total, :tersedia)',
+            [
                 'judul' => $data['judul'],
                 'pengarang' => $data['pengarang'],
                 'kategori' => $data['kategori'],
@@ -166,48 +80,83 @@ final class BookModel
                 'penerbit' => $data['penerbit'] !== '' ? $data['penerbit'] : null,
                 'tahun' => $data['tahun_terbit'] !== '' ? (int) $data['tahun_terbit'] : null,
                 'sinopsis' => $data['sinopsis'] !== '' ? $data['sinopsis'] : null,
-                'total' => $newTotal,
-                'tersedia' => $newTotal - $onLoan,
-                'id' => $id,
-            ]);
+                'total' => (int) $data['jumlah_eksemplar'],
+                'tersedia' => (int) $data['jumlah_eksemplar'],
+            ]
+        );
 
-            $pdo->commit();
-        } catch (\Throwable $exception) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
+        return db_id();
+    }
+
+    public static function update(int $id, array $data): void
+    {
+        db_transaction(static function () use ($id, $data): void {
+            $current = db_one(
+                'SELECT jumlah_eksemplar, stok_tersedia FROM buku WHERE id_buku = :id FOR UPDATE',
+                ['id' => $id]
+            );
+
+            if (!$current) {
+                throw new \RuntimeException('Buku tidak ditemukan.');
             }
-            throw $exception;
-        }
+
+            $onLoan = (int) $current['jumlah_eksemplar'] - (int) $current['stok_tersedia'];
+            $total = (int) $data['jumlah_eksemplar'];
+
+            if ($total < $onLoan) {
+                throw new AppException(
+                    'Jumlah eksemplar tidak boleh kurang dari ' . $onLoan . ' eksemplar yang sedang dipinjam.'
+                );
+            }
+
+            db_run(
+                'UPDATE buku SET judul = :judul, pengarang = :pengarang, kategori = :kategori,
+                        isbn = :isbn, penerbit = :penerbit, tahun_terbit = :tahun, sinopsis = :sinopsis,
+                        jumlah_eksemplar = :total, stok_tersedia = :tersedia
+                 WHERE id_buku = :id',
+                [
+                    'judul' => $data['judul'],
+                    'pengarang' => $data['pengarang'],
+                    'kategori' => $data['kategori'],
+                    'isbn' => $data['isbn'] !== '' ? $data['isbn'] : null,
+                    'penerbit' => $data['penerbit'] !== '' ? $data['penerbit'] : null,
+                    'tahun' => $data['tahun_terbit'] !== '' ? (int) $data['tahun_terbit'] : null,
+                    'sinopsis' => $data['sinopsis'] !== '' ? $data['sinopsis'] : null,
+                    'total' => $total,
+                    'tersedia' => $total - $onLoan,
+                    'id' => $id,
+                ]
+            );
+        });
     }
 
     public static function delete(int $id): void
     {
-        $stmt = Database::pdo()->prepare('DELETE FROM buku WHERE id_buku = :id');
-        $stmt->execute(['id' => $id]);
+        db_run('DELETE FROM buku WHERE id_buku = :id', ['id' => $id]);
     }
 
     public static function hasLoans(int $id): bool
     {
-        $stmt = Database::pdo()->prepare('SELECT COUNT(*) FROM peminjaman WHERE id_buku = :id');
-        $stmt->execute(['id' => $id]);
-        return (int) $stmt->fetchColumn() > 0;
+        return (int) db_value('SELECT COUNT(*) FROM peminjaman WHERE id_buku = :id', ['id' => $id]) > 0;
     }
 
     public static function categories(): array
     {
-        $stmt = Database::pdo()->query('SELECT DISTINCT kategori FROM buku ORDER BY kategori ASC');
-        return array_column($stmt->fetchAll(), 'kategori');
+        return array_column(
+            db_all('SELECT DISTINCT kategori FROM buku ORDER BY kategori ASC'),
+            'kategori'
+        );
     }
 
     public static function stats(): array
     {
-        $row = Database::pdo()->query(
+        $row = db_one(
             'SELECT COUNT(*) AS total_judul,
                     COALESCE(SUM(jumlah_eksemplar), 0) AS total_eksemplar,
                     COALESCE(SUM(stok_tersedia), 0) AS stok_tersedia,
                     COALESCE(SUM(jumlah_eksemplar - stok_tersedia), 0) AS dipinjam
              FROM buku'
-        )->fetch();
+        );
 
         return [
             'total_judul' => (int) ($row['total_judul'] ?? 0),
@@ -217,31 +166,28 @@ final class BookModel
         ];
     }
 
-    /** Buku dengan stok tersedia > 0 untuk form peminjaman. */
     public static function availableForSelect(): array
     {
-        $stmt = Database::pdo()->query(
+        return db_all(
             'SELECT id_buku, judul, pengarang, kategori, stok_tersedia
              FROM buku WHERE stok_tersedia > 0 ORDER BY judul ASC'
         );
-        return $stmt->fetchAll();
     }
 
     public static function allForExport(): array
     {
-        $stmt = Database::pdo()->query(
+        return db_all(
             'SELECT b.*, (b.jumlah_eksemplar - b.stok_tersedia) AS dipinjam,
                     (SELECT COUNT(*) FROM peminjaman p WHERE p.id_buku = b.id_buku) AS total_pinjam
              FROM buku b ORDER BY b.judul ASC'
         );
-        return $stmt->fetchAll();
     }
 
-    /** Buku populer berdasarkan jumlah transaksi. */
     public static function popular(int $limit = 5): array
     {
         $limit = max(1, min(20, $limit));
-        $stmt = Database::pdo()->query(
+
+        return db_all(
             'SELECT b.id_buku, b.judul, b.pengarang, b.kategori, COUNT(p.id_peminjaman) AS total
              FROM buku b
              LEFT JOIN peminjaman p ON p.id_buku = b.id_buku
@@ -249,11 +195,5 @@ final class BookModel
              ORDER BY total DESC, b.judul ASC
              LIMIT ' . $limit
         );
-        return $stmt->fetchAll();
-    }
-
-    public static function totalCopies(): int
-    {
-        return (int) Database::pdo()->query('SELECT COALESCE(SUM(jumlah_eksemplar),0) FROM buku')->fetchColumn();
     }
 }

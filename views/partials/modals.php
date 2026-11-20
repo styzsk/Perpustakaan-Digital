@@ -11,7 +11,7 @@ $showBookModal = (bool) ($showBookModal ?? false);
 $showMemberModal = (bool) ($showMemberModal ?? false);
 $showLoanModal = (bool) ($showLoanModal ?? false);
 
-$categories = $categories ?? [];
+$categories = $categoriesList ?? $categories ?? [];
 $members = $members ?? [];
 $books = $books ?? [];
 $duration = (int) ($duration ?? config('defaults.durasi_hari', 7));

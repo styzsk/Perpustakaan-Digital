@@ -6,33 +6,38 @@ namespace App\Controllers;
 
 use App\Core\Validator;
 use App\Core\View;
+use ReflectionMethod;
 
 /**
- * Induk controller: dispatch action whitelist, render view, guard CSRF.
+ * Induk controller: dispatch action, render view, dan validasi form.
  */
 abstract class BaseController
 {
     /** Kunci halaman aktif (dipakai sidebar & topbar). */
     protected string $pageKey = 'dashboard';
 
-    /**
-     * Daftar action yang boleh dipanggil, contoh: ['store' => 'store'].
-     *
-     * @return array<string, string>
-     */
-    abstract protected function actions(): array;
+    /** Alias action untuk nama method yang tidak bisa dipakai di URL. */
+    protected array $actionAliases = [];
 
+    /** Jalankan method publik controller sesuai parameter ?action=. */
     public function handle(string $action): void
     {
-        $action = $action === '' ? 'index' : $action;
-        $map = $this->actions();
+        $action = $action !== '' ? $action : 'index';
+        $action = $this->actionAliases[$action] ?? $action;
 
-        if (!isset($map[$action])) {
+        if (!method_exists($this, $action)) {
             abort_404();
         }
 
-        $method = $map[$action];
-        $this->{$method}();
+        $method = new ReflectionMethod($this, $action);
+        $isOwnPublicMethod = $method->isPublic()
+            && $method->getDeclaringClass()->getName() === static::class;
+
+        if (!$isOwnPublicMethod) {
+            abort_404();
+        }
+
+        $this->{$action}();
     }
 
     protected function render(string $view, array $data = [], string $layout = 'app'): void
@@ -47,9 +52,7 @@ abstract class BaseController
         }
     }
 
-    /**
-     * Validasi token CSRF untuk semua aksi yang mengubah data.
-     */
+    /** Pastikan request POST dan token CSRF valid. */
     protected function guardCsrf(): void
     {
         $this->requirePost();
@@ -60,16 +63,16 @@ abstract class BaseController
         }
     }
 
-    /**
-     * Simpan error validasi + input lama, lalu kembali ke halaman asal.
-     */
+    /** Simpan error validasi + input lama, lalu kembali ke halaman asal. */
     protected function failValidation(Validator $validator, array $old, string $modal = ''): void
     {
         remember_form_errors($validator->errors());
         remember_old_input($old);
+
         if ($modal !== '') {
             reopen_modal($modal);
         }
+
         flash('error', $validator->firstError());
         redirect_back(url($this->pageKey));
     }

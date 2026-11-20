@@ -468,7 +468,7 @@ $tabs = [
           <?php endforeach; ?>
         <?php endif; ?>
       </div>
-      <p class="fine-foot">Denda hanya dibuat saat pengembalian melewati jatuh tempo. Tarif aktif <?= e(money(\App\Models\SettingsModel::tariff())) ?>/hari.</p>
+      <p class="fine-foot">Denda hanya dibuat saat pengembalian melewati jatuh tempo. Tarif aktif <?= e(money($tariff ?? 1000)) ?>/hari.</p>
     </div>
   </div>
 </section>

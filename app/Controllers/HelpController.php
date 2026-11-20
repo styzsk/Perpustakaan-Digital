@@ -14,11 +14,6 @@ final class HelpController extends BaseController
 {
     protected string $pageKey = 'help';
 
-    protected function actions(): array
-    {
-        return ['index' => 'index'];
-    }
-
     public function index(): void
     {
         $this->render('help/index', [

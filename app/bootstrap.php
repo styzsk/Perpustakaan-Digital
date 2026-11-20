@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 /* ==========================================================================
    Bootstrap BukuHub
-   Titik awal konfigurasi: path, autoload, session, error handling, helper.
+   Path, autoload, session, error handling, dan helper global.
    ========================================================================== */
 
 define('BASE_PATH', dirname(__DIR__));
 
-// Helper harus dimuat sebelum config() dipakai di bawah.
 require BASE_PATH . '/app/Helpers/functions.php';
 
 $GLOBALS['app_config'] = require BASE_PATH . '/config/app.php';
@@ -17,7 +16,7 @@ $GLOBALS['app_config'] = require BASE_PATH . '/config/app.php';
 date_default_timezone_set((string) config('timezone', 'Asia/Jakarta'));
 mb_internal_encoding('UTF-8');
 
-// Tampilkan error hanya saat development; detail teknis masuk ke log.
+// Error hanya ditulis ke log, tidak ditampilkan ke pengguna.
 error_reporting(E_ALL);
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
@@ -27,18 +26,13 @@ if (!is_dir(BASE_PATH . '/storage/logs')) {
     @mkdir(BASE_PATH . '/storage/logs', 0775, true);
 }
 
-/**
- * Autoload sederhana: App\Core\Database => app/Core/Database.php
- */
+/** Autoload sederhana: App\Core\Database => app/Core/Database.php */
 spl_autoload_register(static function (string $class): void {
-    $prefix = 'App\\';
-    if (strncmp($class, $prefix, strlen($prefix)) !== 0) {
+    if (!str_starts_with($class, 'App\\')) {
         return;
     }
 
-    $relative = substr($class, strlen($prefix));
-    $file = BASE_PATH . '/app/' . str_replace('\\', '/', $relative) . '.php';
-
+    $file = BASE_PATH . '/app/' . str_replace('\\', '/', substr($class, 4)) . '.php';
     if (is_file($file)) {
         require $file;
     }
@@ -53,7 +47,6 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_set_cookie_params([
         'lifetime' => 0,
         'path' => '/',
-        'domain' => '',
         'secure' => $secure,
         'httponly' => true,
         'samesite' => 'Lax',
@@ -62,7 +55,6 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-// Header keamanan dasar untuk semua response.
 if (!headers_sent()) {
     header('X-Frame-Options: SAMEORIGIN');
     header('X-Content-Type-Options: nosniff');
@@ -81,8 +73,7 @@ set_exception_handler(static function (Throwable $exception): void {
         http_response_code(500);
     }
 
-    $isDatabaseError = str_contains($exception->getMessage(), 'database');
-    $message = $isDatabaseError
+    $message = str_contains($exception->getMessage(), 'database')
         ? 'Koneksi database gagal. Periksa MySQL dan konfigurasi config/database.php.'
         : 'Terjadi kesalahan internal. Detail teknis sudah dicatat di log aplikasi.';
 
@@ -93,9 +84,7 @@ set_exception_handler(static function (Throwable $exception): void {
     include BASE_PATH . '/views/errors/500.php';
 });
 
-/**
- * Halaman 404 sederhana.
- */
+/** Halaman 404 sederhana. */
 function abort_404(): void
 {
     http_response_code(404);

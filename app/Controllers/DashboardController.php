@@ -8,16 +8,12 @@ use App\Models\BookModel;
 use App\Models\FineModel;
 use App\Models\LoanModel;
 use App\Models\MemberModel;
-use App\Services\ReportService;
+use App\Models\ReportModel;
+use App\Models\SettingsModel;
 
 final class DashboardController extends BaseController
 {
     protected string $pageKey = 'dashboard';
-
-    protected function actions(): array
-    {
-        return ['index' => 'index'];
-    }
 
     public function index(): void
     {
@@ -26,17 +22,14 @@ final class DashboardController extends BaseController
             $tab = 'all';
         }
 
-        $series = ReportService::monthlySeries(12);
+        $series = ReportModel::monthlySeries(12);
         $from = date('Y-m-d', strtotime('first day of -11 months'));
-        $to = today();
-
-        $categories = ReportService::categoryStats($from, $to);
-        $categoryTotal = array_sum(array_column($categories, 'total'));
+        $categories = ReportModel::categoryStats($from, today());
 
         $peak = ['label' => '—', 'value' => 0];
-        $sum = 0;
+        $total = 0;
         foreach ($series as $month) {
-            $sum += $month['current'];
+            $total += $month['current'];
             if ($month['current'] > $peak['value']) {
                 $peak = ['label' => $month['label'] . ' ' . $month['year'], 'value' => $month['current']];
             }
@@ -50,20 +43,20 @@ final class DashboardController extends BaseController
             'fineStats' => FineModel::stats(),
             'series' => $series,
             'categories' => $categories,
-            'categoryTotal' => $categoryTotal,
+            'categoryTotal' => array_sum(array_column($categories, 'total')),
             'peak' => $peak,
-            'average' => (int) round($sum / max(1, count($series))),
+            'average' => (int) round($total / max(1, count($series))),
             'popular' => BookModel::popular(4),
             'recent' => LoanModel::paginate(['tab' => $tab], 1, 6),
             'tabCounts' => LoanModel::countsForTabs(),
             'activeTab' => $tab,
             'recentFines' => FineModel::recentPayments(4),
             'categoriesList' => BookModel::categories(),
-            'defaultLimit' => \App\Models\SettingsModel::defaultLimit(),
+            'defaultLimit' => SettingsModel::defaultLimit(),
             'members' => MemberModel::activeForSelect(),
             'books' => BookModel::availableForSelect(),
-            'duration' => \App\Models\SettingsModel::loanDuration(),
-            'tariff' => \App\Models\SettingsModel::tariff(),
+            'duration' => SettingsModel::loanDuration(),
+            'tariff' => SettingsModel::tariff(),
             'showBookModal' => true,
             'showMemberModal' => true,
             'showLoanModal' => true,

@@ -5,40 +5,30 @@ declare(strict_types=1);
 namespace App\Core;
 
 /**
- * Render view PHP dengan layout. Tidak memakai template engine tambahan.
+ * Render view PHP dengan layout.
  */
 final class View
 {
     public static function render(string $template, array $data = [], string $layout = 'app'): void
     {
         $viewFile = BASE_PATH . '/views/' . str_replace('.', '/', $template) . '.php';
+
         if (!is_file($viewFile)) {
             throw new \RuntimeException('View tidak ditemukan: ' . $template);
         }
 
-        $shared = [];
+        $shared = ['old' => pull_old_input(), 'formErrors' => pull_form_errors()];
+
         if ($layout === 'app') {
-            $user = Auth::user();
-            $shared = [
-                'user' => $user ?? [],
-                'notifications' => \App\Services\NotificationService::feed(),
-                'navCounts' => \App\Services\NotificationService::navCounts(),
-                'openModal' => pull_open_modal(),
-                'old' => pull_old_input(),
-                'formErrors' => pull_form_errors(),
-            ];
-        } elseif ($layout === 'auth') {
-            $shared = [
-                'openModal' => null,
-                'old' => pull_old_input(),
-                'formErrors' => pull_form_errors(),
-            ];
+            $shared['user'] = Auth::user() ?? [];
+            $shared['notifications'] = notification_feed();
+            $shared['navCounts'] = notification_counts();
+            $shared['openModal'] = pull_open_modal();
         }
 
         $vars = array_merge($shared, $data);
-
-        $GLOBALS['__old_input'] = $shared['old'] ?? [];
-        $GLOBALS['__form_errors'] = $shared['formErrors'] ?? [];
+        $GLOBALS['__old_input'] = $vars['old'] ?? [];
+        $GLOBALS['__form_errors'] = $vars['formErrors'] ?? [];
 
         extract($vars, EXTR_SKIP);
 

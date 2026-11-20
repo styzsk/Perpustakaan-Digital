@@ -4,8 +4,93 @@ declare(strict_types=1);
 
 /* ==========================================================================
    Helper global BukuHub.
-   Berisi fungsi kecil yang dipakai bersama oleh controller dan view.
+   Berisi fungsi kecil yang dipakai bersama oleh controller, model, dan view.
    ========================================================================== */
+
+/* ------------------------------ Database -------------------------------- */
+
+/** Koneksi PDO aktif. */
+function db(): PDO
+{
+    return \App\Core\Database::pdo();
+}
+
+/** Jalankan query dengan parameter, kembalikan statement-nya. */
+function db_run(string $sql, array $params = []): PDOStatement
+{
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
+    return $stmt;
+}
+
+/** Ambil semua baris hasil query. */
+function db_all(string $sql, array $params = []): array
+{
+    return db_run($sql, $params)->fetchAll();
+}
+
+/** Ambil satu baris hasil query (null bila kosong). */
+function db_one(string $sql, array $params = []): ?array
+{
+    $row = db_run($sql, $params)->fetch();
+    return $row === false ? null : $row;
+}
+
+/** Ambil satu nilai dari kolom pertama. */
+function db_value(string $sql, array $params = []): mixed
+{
+    return db_run($sql, $params)->fetchColumn();
+}
+
+/** ID dari baris yang baru disimpan. */
+function db_id(): int
+{
+    return (int) db()->lastInsertId();
+}
+
+/** Jalankan beberapa query dalam satu transaksi. */
+function db_transaction(callable $callback): mixed
+{
+    return \App\Core\Database::transaction($callback);
+}
+
+/**
+ * Query daftar dengan LIMIT/OFFSET dan ringkasan pagination.
+ *
+ * @return array{items:array,total:int,page:int,perPage:int,totalPages:int,from:int,to:int}
+ */
+function db_paginate(
+    string $countSql,
+    string $dataSql,
+    array $params,
+    int $page,
+    int $perPage
+): array {
+    $total = (int) db_value($countSql, $params);
+    $totalPages = max(1, (int) ceil($total / $perPage));
+    $page = min(max(1, $page), $totalPages);
+    $offset = ($page - 1) * $perPage;
+
+    $stmt = db()->prepare($dataSql . ' LIMIT :limit OFFSET :offset');
+    foreach ($params as $key => $value) {
+        $stmt->bindValue(':' . $key, $value);
+    }
+    $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $stmt->execute();
+
+    return [
+        'items' => $stmt->fetchAll(),
+        'total' => $total,
+        'page' => $page,
+        'perPage' => $perPage,
+        'totalPages' => $totalPages,
+        'from' => $total === 0 ? 0 : $offset + 1,
+        'to' => min($offset + $perPage, $total),
+    ];
+}
+
+/* ------------------------------ Konfigurasi ----------------------------- */
 
 /**
  * Ambil nilai konfigurasi dengan dot notation, contoh: config('session.lifetime').
@@ -60,7 +145,7 @@ function audit_trail(
             $ip = null;
         }
 
-        $stmt = \App\Core\Database::pdo()->prepare(
+        $stmt = db()->prepare(
             'INSERT INTO audit_log (id_user, aksi, entitas, entitas_id, detail, ip_address)
              VALUES (:id_user, :aksi, :entitas, :entitas_id, :detail, :ip)'
         );
@@ -372,15 +457,50 @@ function verify_csrf(): bool
     return hash_equals((string) $_SESSION['csrf_token'], $token);
 }
 
-/**
- * Hentikan request dengan pesan aman bila token CSRF tidak valid.
- */
-function require_csrf(): void
+/* ------------------------------ Notifikasi ------------------------------- */
+
+/** Angka badge notifikasi di sidebar/topbar. */
+function notification_counts(): array
 {
-    if (!verify_csrf()) {
-        flash('error', 'Sesi form kedaluwarsa. Silakan coba lagi.');
-        redirect(url('dashboard'));
+    $loans = \App\Models\LoanModel::stats();
+    $fines = \App\Models\FineModel::stats();
+
+    return [
+        'active_loans' => $loans['aktif'],
+        'overdue' => $loans['terlambat'],
+        'unpaid_fines' => $fines['jumlah_belum'],
+    ];
+}
+
+/** Daftar notifikasi dari peminjaman terlambat dan denda belum lunas. */
+function notification_feed(int $limit = 5): array
+{
+    $items = [];
+
+    foreach (\App\Models\LoanModel::paginate(['tab' => 'overdue'], 1, 3)['items'] as $loan) {
+        $state = loan_state($loan);
+        $items[] = [
+            'tone' => 'orange',
+            'icon' => 'clock',
+            'title' => 'Terlambat ' . $state['late'] . ' hari',
+            'message' => $loan['judul'] . ' · ' . $loan['anggota_nama'],
+            'time' => format_date($loan['tgl_kembali_rencana']),
+            'url' => url('borrowing', ['tab' => 'overdue']),
+        ];
     }
+
+    foreach (\App\Models\FineModel::paginate(['status' => 'unpaid'], 1, 3)['items'] as $fine) {
+        $items[] = [
+            'tone' => 'dark',
+            'icon' => 'wallet',
+            'title' => 'Denda belum lunas',
+            'message' => money($fine['total_denda']) . ' · ' . $fine['anggota_nama'],
+            'time' => format_date($fine['tgl_kembali_real']),
+            'url' => url('fines', ['status' => 'unpaid']),
+        ];
+    }
+
+    return array_slice($items, 0, $limit);
 }
 
 /* ------------------------------ Tampilan -------------------------------- */
@@ -509,38 +629,6 @@ function book_url(int $id, string $action = 'show'): string
 function member_url(int $id, string $action = 'show'): string
 {
     return url('members', ['action' => $action, 'id' => $id]);
-}
-
-/** Tanggal relatif singkat untuk notifikasi. */
-function relative_time(?string $datetime): string
-{
-    if (!$datetime) {
-        return '—';
-    }
-
-    $timestamp = strtotime($datetime);
-    if ($timestamp === false) {
-        return '—';
-    }
-
-    $diff = time() - $timestamp;
-    if ($diff < 60) {
-        return 'baru saja';
-    }
-    if ($diff < 3600) {
-        return floor($diff / 60) . ' menit lalu';
-    }
-    if ($diff < 86400) {
-        return floor($diff / 3600) . ' jam lalu';
-    }
-    if ($diff < 172800) {
-        return 'kemarin';
-    }
-    if ($diff < 604800) {
-        return floor($diff / 86400) . ' hari lalu';
-    }
-
-    return format_date(date('Y-m-d', $timestamp));
 }
 
 /**

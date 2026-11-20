@@ -4,21 +4,19 @@ declare(strict_types=1);
 
 namespace App\Core;
 
+use App\Models\UserModel;
+
 /**
- * Autentikasi pustakawan berbasis session PHP.
+ * Autentikasi pustakawan berbasis session.
  */
 final class Auth
 {
     public static function attempt(string $username, string $password): bool
     {
-        $user = \App\Models\UserModel::findByUsername($username);
+        $user = UserModel::findByUsername($username);
 
         if (!$user || !password_verify($password, $user['password_hash'])) {
             return false;
-        }
-
-        if (password_needs_rehash($user['password_hash'], PASSWORD_DEFAULT)) {
-            \App\Models\UserModel::updatePassword((int) $user['id_user'], $password);
         }
 
         session_regenerate_id(true);
@@ -28,7 +26,7 @@ final class Auth
         $_SESSION['user_role'] = $user['role'];
         $_SESSION['last_activity'] = time();
 
-        \App\Models\UserModel::touchLogin((int) $user['id_user']);
+        UserModel::touchLogin((int) $user['id_user']);
 
         return true;
     }
@@ -63,39 +61,21 @@ final class Auth
     public static function logout(): void
     {
         $_SESSION = [];
-
-        if (ini_get('session.use_cookies')) {
-            $params = session_get_cookie_params();
-            setcookie(session_name(), '', [
-                'expires' => time() - 42000,
-                'path' => $params['path'],
-                'domain' => $params['domain'],
-                'secure' => (bool) $params['secure'],
-                'httponly' => (bool) $params['httponly'],
-                'samesite' => 'Lax',
-            ]);
-        }
-
         session_destroy();
     }
 
-    /**
-     * Logout otomatis bila melewati batas waktu tidak aktif.
-     */
+    /** Logout otomatis setelah batas waktu tidak aktif. */
     public static function enforceTimeout(): void
     {
         if (!self::check()) {
             return;
         }
 
-        $lifetime = (int) config('session.lifetime', 1800);
         $last = (int) ($_SESSION['last_activity'] ?? 0);
 
-        if ($last > 0 && (time() - $last) > $lifetime) {
+        if ($last > 0 && (time() - $last) > (int) config('session.lifetime', 1800)) {
             self::logout();
-            if (session_status() !== PHP_SESSION_ACTIVE) {
-                session_start();
-            }
+            session_start();
             flash('warning', 'Session berakhir karena tidak ada aktivitas. Silakan masuk kembali.');
             return;
         }

@@ -5,42 +5,37 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Models\LoanModel;
-use App\Services\ReportService;
+use App\Models\ReportModel;
 
 final class ReportController extends BaseController
 {
     protected string $pageKey = 'reports';
 
-    protected function actions(): array
-    {
-        return ['index' => 'index', 'export' => 'export'];
-    }
-
     public function index(): void
     {
-        $period = ReportService::period();
+        $period = ReportModel::period();
 
         $this->render('reports/index', [
             'pageTitle' => 'Laporan & Analitik',
             'period' => $period,
-            'summary' => ReportService::summary($period['from'], $period['to']),
-            'series' => ReportService::monthlySeries(12),
+            'summary' => ReportModel::summary($period['from'], $period['to']),
+            'series' => ReportModel::monthlySeries(12),
             'topBooks' => LoanModel::topBooks($period['from'], $period['to'], 5),
-            'categories' => ReportService::categoryStats($period['from'], $period['to']),
-            'memberActivity' => ReportService::memberActivity($period['from'], $period['to'], 10),
-            'fines' => ReportService::finesSummary(),
+            'categories' => ReportModel::categoryStats($period['from'], $period['to']),
+            'memberActivity' => ReportModel::memberActivity($period['from'], $period['to'], 10),
+            'fines' => ReportModel::finesSummary(),
         ]);
     }
 
     public function export(): void
     {
-        $period = ReportService::period();
-        $summary = ReportService::summary($period['from'], $period['to']);
-        $series = ReportService::monthlySeries(12);
+        $period = ReportModel::period();
+        $summary = ReportModel::summary($period['from'], $period['to']);
+        $series = ReportModel::monthlySeries(12);
         $topBooks = LoanModel::topBooks($period['from'], $period['to'], 10);
-        $categories = ReportService::categoryStats($period['from'], $period['to']);
-        $members = ReportService::memberActivity($period['from'], $period['to'], 20);
-        $fines = ReportService::finesSummary();
+        $categories = ReportModel::categoryStats($period['from'], $period['to']);
+        $members = ReportModel::memberActivity($period['from'], $period['to'], 20);
+        $fines = ReportModel::finesSummary();
 
         $rows = [
             ['Laporan BukuHub'],

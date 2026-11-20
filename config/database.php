@@ -1,25 +1,22 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Konfigurasi koneksi database (PDO).
- *
- * Nilai dapat diubah lewat environment variable tanpa mengedit file ini:
- *   DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS
- *
- * Default mengikuti instalasi XAMPP/Laragon: user "root" tanpa password.
+ * Sesuaikan nilai di bawah dengan pengaturan MySQL Anda (XAMPP/Laragon).
  */
-$env = static function (string $key, string $default): string {
-    $value = getenv($key);
-    return ($value === false || $value === '') ? $default : $value;
-};
 
-return [
-    'host' => $env('DB_HOST', '127.0.0.1'),
-    'port' => $env('DB_PORT', '3306'),
-    'name' => $env('DB_NAME', 'bukuhub'),
-    'user' => $env('DB_USER', 'root'),
-    'pass' => $env('DB_PASS', ''),
-    'charset' => 'utf8mb4',
-];
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "bukuhub";
+
+try {
+    $conn = new PDO("mysql:host=$servername;dbname=$dbname;charset=utf8mb4", $username, $password);
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $conn->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log("Connection failed: " . $e->getMessage());
+    throw new RuntimeException("Koneksi database gagal. Periksa config/database.php.");
+}
+
+return $conn;
